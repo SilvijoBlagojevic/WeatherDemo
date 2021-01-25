@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <title>Wetterinformationen</title>
+    <script>
+        const openWeatherKey = '35fd502e6b9c22427d3e4ff0532c7f90';
+
+        async function showWeatherData() {
+            var inputCityName = document.getElementById("inputCityName").value;
+            var vd = await GetWeatherByName(inputCityName);
+            if (vd == null || vd === "") {
+                alert("Hat die Stadt den richtigen Namen?");
+                document.getElementById("inputCityName").focus();
+                return;
+            }
+            setValues(vd)
+        }
+
+        async function ShowWeatherDataWithGeolocation() {
+            async function success(position) {
+                var wd = await GetWeatherByGeolocation(position.coords.latitude, position.coords.longitude);
+                if (wd == null) return alert("Error, keine Daten gefunden!");
+                setValues(wd);
+            }
+
+            function error() {
+                alert("Bitte die Stadt Namen manuel eintragen!");
+                document.getElementById("inputCityName").focus();
+            }
+
+            if (!navigator.geolocation) {
+                alert("Geolocation wird von Ihrem Browser nicht unterstützt, bitte die Stadt Name manuel eintragen!");
+            } else {
+                navigator.geolocation.getCurrentPosition(await success, error);
+            }
+        }
+
+        function setValues(vd) {
+            document.getElementById("searchedStadt").innerHTML = vd.stadt;
+            document.getElementById("temp").innerHTML = vd.temperatur + "&#8451;";
+            document.getElementById("luftd").innerHTML = vd.luftdruck + "hPa";
+            document.getElementById("feuch").innerHTML = vd.feuchtigkeit + "%";
+            document.getElementById("gerTemp").innerHTML = vd.gerTemperatur + "&#8451;";
+            document.getElementById("hoeTemp").innerHTML = vd.hoeTemperatur + "&#8451;";
+            document.getElementById("windgesch").innerHTML = vd.windgeschwindigkeit + "m/s";
+            document.getElementById("windricht").innerHTML = vd.windrichtung + "\u00B0";
+            document.getElementById("beschreibung").innerHTML = vd.beschreibung;
+            document.getElementById("cityIcon").src = 'https://openweathermap.org/img/wn/' + vd.iconCode + '@2x.png';
+        }
+
+        async function GetWeatherByGeolocation(latitude, longitude) {
+            EnableInputEnter()
+
+            var respone = await fetch('http://api.openweathermap.org/data/2.5/weather?lat=' + latitude + '&lon=' + longitude + '&lang=de&units=metric&appid=' + openWeatherKey + '&lang=de');
+            // var respone = await fetch('https://localhost:44381/api/weather/GetWeatherGeo?latitude=' + latitude + '&longitude=' + longitude);
+
+            if (respone.ok) {
+                var data = await respone.json();
+                return GetViewWeatherData(data);
+            }
+            return null;
+        }
+
+        async function GetWeatherByName(cityName) {
+            var respone = await fetch('https://api.openweathermap.org/data/2.5/weather?q=' + cityName + ',de&units=metric&appid=' + openWeatherKey + '&lang=de');
+            //var respone = await fetch('https://localhost:44381/api/weather/GetWeatherCityName?city=' + cityName);
+
+            if (respone.ok) {
+                var data = await respone.json();
+                return GetViewWeatherData(data);
+            }
+            return null;
+        }
+
+        function GetViewWeatherData(data) {
+            return {
+                temperatur: data.main.temp,
+                luftdruck: data.main.pressure,
+                feuchtigkeit: data.main.humidity,
+                gerTemperatur: data.main.temp_min,
+                hoeTemperatur: data.main.temp_max,
+                windgeschwindigkeit: data.wind.speed,
+                windrichtung: data.wind.deg,
+                beschreibung: data.weather[0].description,
+                iconCode: data.weather[0].icon,
+                stadt: data.name
+            }
+        }
+
+        function EnableInputEnter() {
+            var input = document.getElementById("inputCityName");
+
+            input.addEventListener("keyup", function (event) {
+                if (event.keyCode === 13) {
+                    event.preventDefault();
+                    document.getElementById("stdBtn").click();
+                }
+            });
+
+        }
+    </script>
+</head>
+<body onload="ShowWeatherDataWithGeolocation()">
+    <div class="container-fluid">
+        <div class="row bg-primary justify-content-md-center">
+            <p class="display-3 text-white mb-4">Aktuelle Wetterinformationen</p>
+        </div>
+        <div class="row justify-content-md-center mb-2">
+            <h4 class="text-primary">Stadtnamen eingeben</h4>
+        </div>
+        <div class="form-group">
+            <div class="row justify-content-md-center">
+                <div class="col-md-2">
+                    <input class="form-control " type="text" id="inputCityName">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary" onclick="showWeatherData()" id="stdBtn">Stadt suchen</button>
+                </div>
+            </div>
+        </div>
+        <div class="row justify-content-md-center">
+            <h3 class="row mb-3">Aktuelle Wetterlage in &nbsp;<span id="searchedStadt" /></h3>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-2">
+                <div class="row">
+                    <strong>Temperatur:</strong> <span id="temp"></span>
+                </div>
+                <div class="row">
+                    <strong>Luftdruck:</strong> <span id="luftd"></span>
+                </div>
+                <div class="row">
+                    <strong>Feuchtigkeit:</strong> <span id="feuch"></span>
+                </div>
+                <div class="row">
+                    <strong>geringste Temperatur:</strong> <span id="gerTemp"></span>
+                </div>
+                <div class="row">
+                    <strong>höchste Temperatur:</strong> <span id="hoeTemp"></span>
+                </div>
+                <div class="row">
+                    <strong>Windgeschwindigkeit:</strong> <span id="windgesch"></span>
+                </div>
+                <div class="row">
+                    <strong>Windrichtung:</strong> <span id="windricht"></span>
+                </div>
+            </div>
+            <div class="ml-5 col-2">
+                <img id="cityIcon" />
+                <strong><span id="beschreibung" /></strong>
+            </div>
+        </div>
+        <div class="fixed-bottom bg-primary" style="height:50px;"></div>
+    </div>
+</body>
+</html>
